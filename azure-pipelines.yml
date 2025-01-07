@@ -1,0 +1,35 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  solution: './APITempo/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+
+steps:
+- task: UseDotNet@2
+  displayname: 'Install .NET Core SDK'
+  inputs:
+    packageType: 'sdk'
+    version: '8.x'
+
+- script: dotnet restore $(solution)
+  displayName: 'Restore solution'
+
+- script: dotnet build $(solution) --configuration $(buildConfiguration)
+  displayName: 'Build solution'
+
+- script: dotnet test $(solution) --configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage"
+  displayName: 'Run tests'
+
+- task: @Docker2@0
+  inputs:
+    containerRegistry: 'acrprfagund'
+    repository: 'api-tempo'
+    command: 'buildAndPush'
+    Dockerfile: './APITempo/APITempo/Dockerfile'
+    tags: 'latest'
+
